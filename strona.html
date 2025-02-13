@@ -121,36 +121,39 @@ function authenticate() {
             });
         }
 
-        function listFiles() {
-            if (!accessToken) {
-                alert("Proszę się zalogować.");
-                return;
-            }
+function listFiles() {
+    if (!accessToken) {
+        alert("Proszę się zalogować.");
+        return;
+    }
 
-gapi.client.drive.files.list({
-    pageSize: 10,
-    fields: "files(id, name, owners)",
-    q: "'me' in owners" // Pobiera tylko pliki należące do użytkownika
-}).then(response => {
-    const files = response.result.files;
-    console.log("Znalezione pliki:", files);
-});
+    gapi.client.drive.files.list({
+        pageSize: 10,
+        fields: "files(id, name, owners)",
+        q: "'me' in owners" // Pobiera tylko pliki należące do użytkownika
+    }).then(response => {
+        const files = response.result.files;
+        console.log("Znalezione pliki:", files);
 
-                if (!files || files.length === 0) {
-                    fileList.innerHTML = "<li>Brak plików.</li>";
-                    return;
-                }
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
 
-                files.forEach(file => {
-                    let li = document.createElement('li');
-                    li.innerHTML = `<a href="https://drive.google.com/uc?id=${file.id}" target="_blank">${file.name}</a>`;
-                    fileList.appendChild(li);
-                });
-            }).catch(error => {
-                console.error("Błąd listowania plików:", error);
-                alert("Błąd listowania plików. Sprawdź konsolę.");
-            });
+        if (!files || files.length === 0) {
+            fileList.innerHTML = "<li>Brak plików.</li>";
+            return;
         }
+
+        files.forEach(file => {
+            let li = document.createElement('li');
+            li.innerHTML = `<a href="https://drive.google.com/uc?id=${file.id}" target="_blank">${file.name}</a>`;
+            fileList.appendChild(li);
+        });
+    }).catch(error => {
+        console.error("Błąd listowania plików:", error);
+        alert("Błąd listowania plików. Sprawdź konsolę.");
+    });
+}
+
     </script>
 </body>
 </html>
