@@ -178,7 +178,7 @@
         const AZURE_STORAGE_URL = "https://filiptonkiewicz22688.blob.core.windows.net/pliki?sp=racwdli&st=2025-02-14T19:06:10Z&se=2025-02-15T03:06:10Z&sv=2022-11-02&sr=c&sig=cnX8Blk8RILvsi0Jw0nn2%2BGIh%2BFy7Ups5brHsCAQF%2Fk%3D";
         const SAS_TOKEN = "sp=racwdli&st=2025-02-14T19:06:10Z&se=2025-02-15T03:06:10Z&sv=2022-11-02&sr=c&sig=cnX8Blk8RILvsi0Jw0nn2%2BGIh%2BFy7Ups5brHsCAQF%2Fk%3D"; // Wstaw swój SAS Token
         const BLOB_STORAGE_URL = "https://filiptonkiewicz22688.blob.core.windows.net/pliki";
-        const listUrl = `${BLOB_STORAGE_URL}?restype=container&comp=list${SAS_TOKEN}`;
+        const listUrl = `https://filiptonkiewicz22688.blob.core.windows.net/pliki?sp=racwdli&st=2025-02-14T19:06:10Z&se=2025-02-15T03:06:10Z&sv=2022-11-02&sr=c&sig=cnX8Blk8RILvsi0Jw0nn2%2BGIh%2BFy7Ups5brHsCAQF%2Fk%3D`;
 
         function uploadToAzure() {
             const fileInput = document.getElementById('file-input');
