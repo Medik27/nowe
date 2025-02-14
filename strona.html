@@ -4,12 +4,18 @@
     <meta name="google-site-verification" content="At5JYD1ScFBstPA0SkIezdaMSU4g_oqSScQA6UJGKqc" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Drive File Manager</title>
+    <title>Google Drive & Azure Storage File Manager</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
-    <h2>Google Drive File Manager</h2>
+    <h2>File Manager - Google Drive & Azure</h2>
+    
+    <label for="storage-select">Wybierz przechowywanie:</label>
+    <select id="storage-select">
+        <option value="google">Google Drive</option>
+        <option value="azure">Azure Storage</option>
+    </select>
 
     <button id="login-btn" onclick="authenticate()">Zaloguj się do Google</button>
     <button id="logout-btn" onclick="signOut()" style="display:none;">Wyloguj się</button>
@@ -24,6 +30,7 @@
     <ul id="file-list"></ul>
 
     <script>
+        // GOOGLE DRIVE CONFIG
         const CLIENT_ID = '450078084150-qs3ft6f5bok02dehkl5665tpimfjanr2.apps.googleusercontent.com';
         const API_KEY = 'AIzaSyCPdcaIxxkxuGvrBBS4EUS2S5yyw81GVow';
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
@@ -32,34 +39,34 @@
         let accessToken = null;
         let tokenClient;
 
-function authenticate() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        prompt: 'consent', // Wymusza ponowne zapytanie o uprawnienia
-        callback: (response) => {
-            if (response.access_token) {
-                accessToken = response.access_token;
-                document.getElementById("login-btn").style.display = "none";
-                document.getElementById("logout-btn").style.display = "block";
-                loadGoogleAPI();
-            } else {
-                alert("Logowanie nie powiodło się.");
-            }
-        }
-    });
+        function authenticate() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                prompt: 'consent',
+                callback: (response) => {
+                    if (response.access_token) {
+                        accessToken = response.access_token;
+                        document.getElementById("login-btn").style.display = "none";
+                        document.getElementById("logout-btn").style.display = "block";
+                        loadGoogleAPI();
+                    } else {
+                        alert("Logowanie nie powiodło się.");
+                    }
+                }
+            });
 
-    tokenClient.requestAccessToken();
-}
+            tokenClient.requestAccessToken();
+        }
 
         function resetPermissions() {
-    google.accounts.oauth2.revoke(accessToken, () => {
-        alert("Uprawnienia zostały zresetowane. Zaloguj się ponownie.");
-        accessToken = null;
-        document.getElementById("login-btn").style.display = "block";
-        document.getElementById("logout-btn").style.display = "none";
-    });
-}
+            google.accounts.oauth2.revoke(accessToken, () => {
+                alert("Uprawnienia zostały zresetowane. Zaloguj się ponownie.");
+                accessToken = null;
+                document.getElementById("login-btn").style.display = "block";
+                document.getElementById("logout-btn").style.display = "none";
+            });
+        }
 
         function signOut() {
             google.accounts.id.disableAutoSelect();
@@ -83,6 +90,27 @@ function authenticate() {
         }
 
         function uploadFile() {
+            const storageOption = document.getElementById('storage-select').value;
+            
+            if (storageOption === "google") {
+                uploadToGoogle();
+            } else if (storageOption === "azure") {
+                uploadToAzure();
+            }
+        }
+
+        function listFiles() {
+            const storageOption = document.getElementById('storage-select').value;
+            
+            if (storageOption === "google") {
+                listGoogleFiles();
+            } else if (storageOption === "azure") {
+                listAzureFiles();
+            }
+        }
+
+        // GOOGLE DRIVE UPLOAD
+        function uploadToGoogle() {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
 
@@ -112,48 +140,86 @@ function authenticate() {
             })
             .then(response => response.json())
             .then(data => {
-                alert("Plik przesłany: " + data.name);
-                listFiles();
+                alert("Plik przesłany do Google Drive: " + data.name);
+                listGoogleFiles();
             })
             .catch(error => {
                 console.error("Błąd przesyłania pliku:", error);
-                alert("Błąd przesyłania pliku. Sprawdź konsolę.");
+                alert("Błąd przesyłania pliku do Google Drive.");
             });
         }
 
-function listFiles() {
-    if (!accessToken) {
-        alert("Proszę się zalogować.");
-        return;
-    }
+        function listGoogleFiles() {
+            gapi.client.drive.files.list({
+                pageSize: 10,
+                fields: "files(id, name, owners)",
+                q: "'me' in owners"
+            }).then(response => {
+                const files = response.result.files;
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
 
-    gapi.client.drive.files.list({
-        pageSize: 10,
-        fields: "files(id, name, owners)",
-        q: "'me' in owners" // Pobiera tylko pliki należące do użytkownika
-    }).then(response => {
-        const files = response.result.files;
-        console.log("Znalezione pliki:", files);
+                if (!files || files.length === 0) {
+                    fileList.innerHTML = "<li>Brak plików w Google Drive.</li>";
+                    return;
+                }
 
-        const fileList = document.getElementById('file-list');
-        fileList.innerHTML = '';
-
-        if (!files || files.length === 0) {
-            fileList.innerHTML = "<li>Brak plików.</li>";
-            return;
+                files.forEach(file => {
+                    let li = document.createElement('li');
+                    li.innerHTML = `<a href="https://drive.google.com/uc?id=${file.id}" target="_blank">${file.name}</a>`;
+                    fileList.appendChild(li);
+                });
+            }).catch(error => {
+                console.error("Błąd listowania plików w Google Drive:", error);
+            });
         }
 
-        files.forEach(file => {
-            let li = document.createElement('li');
-            li.innerHTML = `<a href="https://drive.google.com/uc?id=${file.id}" target="_blank">${file.name}</a>`;
-            fileList.appendChild(li);
-        });
-    }).catch(error => {
-        console.error("Błąd listowania plików:", error);
-        alert("Błąd listowania plików. Sprawdź konsolę.");
-    });
-}
+        // AZURE STORAGE CONFIG
+        const AZURE_STORAGE_URL = "https://mojestorages.blob.core.windows.net/pliki";
+        const SAS_TOKEN = "?sp=rwl&st=...&sig=..."; // Wstaw swój SAS Token
 
+        function uploadToAzure() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Proszę wybrać plik do przesłania.");
+                return;
+            }
+
+            const blobUrl = `${AZURE_STORAGE_URL}/${file.name}${SAS_TOKEN}`;
+
+            fetch(blobUrl, {
+                method: 'PUT',
+                headers: { 'x-ms-blob-type': 'BlockBlob' },
+                body: file
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Plik przesłany do Azure Storage: " + file.name);
+                    listAzureFiles();
+                }
+            })
+            .catch(error => console.error("Błąd przesyłania do Azure:", error));
+        }
+
+        function listAzureFiles() {
+            fetch(`${AZURE_STORAGE_URL}?restype=container&comp=list${SAS_TOKEN}`)
+            .then(response => response.text())
+            .then(str => (new window.DOMParser()).parseFromString(str, "text/xml"))
+            .then(data => {
+                const blobs = data.getElementsByTagName("Blob");
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+
+                for (let i = 0; i < blobs.length; i++) {
+                    let fileName = blobs[i].getElementsByTagName("Name")[0].textContent;
+                    let li = document.createElement('li');
+                    li.innerHTML = `<a href="${AZURE_STORAGE_URL}/${fileName}${SAS_TOKEN}" target="_blank">${fileName}</a>`;
+                    fileList.appendChild(li);
+                }
+            });
+        }
 
     </script>
 </body>
