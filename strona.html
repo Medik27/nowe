@@ -175,8 +175,10 @@
         }
 
         // AZURE STORAGE CONFIG
-        const AZURE_STORAGE_URL = "https://filiptonkiewicz22688.blob.core.windows.net/pliki";
-        const SAS_TOKEN = "sp=racwdl&st=2025-02-14T18:30:26Z&se=2025-02-15T02:30:26Z&spr=https&sv=2022-11-02&sr=c&sig=65p1fWwvhxwlMOdFpP2lGx8EpLRt4dtpK%2FDsANQ%2BhOE%3D"; // Wstaw swój SAS Token
+        const AZURE_STORAGE_URL = "https://filiptonkiewicz22688.blob.core.windows.net/pliki?sp=racwdli&st=2025-02-14T19:06:10Z&se=2025-02-15T03:06:10Z&sv=2022-11-02&sr=c&sig=cnX8Blk8RILvsi0Jw0nn2%2BGIh%2BFy7Ups5brHsCAQF%2Fk%3D";
+        const SAS_TOKEN = "sp=racwdli&st=2025-02-14T19:06:10Z&se=2025-02-15T03:06:10Z&sv=2022-11-02&sr=c&sig=cnX8Blk8RILvsi0Jw0nn2%2BGIh%2BFy7Ups5brHsCAQF%2Fk%3D"; // Wstaw swój SAS Token
+        const BLOB_STORAGE_URL = "https://filiptonkiewicz22688.blob.core.windows.net/pliki";
+        const listUrl = `${BLOB_STORAGE_URL}?restype=container&comp=list${SAS_TOKEN}`;
 
         function uploadToAzure() {
             const fileInput = document.getElementById('file-input');
@@ -203,23 +205,33 @@
             .catch(error => console.error("Błąd przesyłania do Azure:", error));
         }
 
-        function listAzureFiles() {
-            fetch(`${AZURE_STORAGE_URL}?restype=container&comp=list${SAS_TOKEN}`)
-            .then(response => response.text())
-            .then(str => (new window.DOMParser()).parseFromString(str, "text/xml"))
-            .then(data => {
-                const blobs = data.getElementsByTagName("Blob");
-                const fileList = document.getElementById('file-list');
-                fileList.innerHTML = '';
+function listAzureFiles() {
+    const SAS_TOKEN = "?sp=rl&st=2025-02-14T18:30:26Z&se=2025-02-15T02:30:26Z&spr=https&sv=2022-11-02&sr=c&sig=...";
+    const BLOB_STORAGE_URL = "https://filiptonkiewicz22688.blob.core.windows.net/pliki";
+    const listUrl = `${BLOB_STORAGE_URL}?restype=container&comp=list${SAS_TOKEN}`;
 
-                for (let i = 0; i < blobs.length; i++) {
-                    let fileName = blobs[i].getElementsByTagName("Name")[0].textContent;
-                    let li = document.createElement('li');
-                    li.innerHTML = `<a href="${AZURE_STORAGE_URL}/${fileName}${SAS_TOKEN}" target="_blank">${fileName}</a>`;
-                    fileList.appendChild(li);
-                }
-            });
-        }
+    fetch(listUrl)
+        .then(response => response.text())
+        .then(str => (new window.DOMParser()).parseFromString(str, "text/xml"))
+        .then(data => {
+            const blobs = data.getElementsByTagName("Blob");
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+
+            if (blobs.length === 0) {
+                fileList.innerHTML = "<li>Brak plików w Azure Storage.</li>";
+                return;
+            }
+
+            for (let i = 0; i < blobs.length; i++) {
+                let fileName = blobs[i].getElementsByTagName("Name")[0].textContent;
+                let li = document.createElement('li');
+                li.innerHTML = `<a href="${BLOB_STORAGE_URL}/${fileName}${SAS_TOKEN}" target="_blank">${fileName}</a>`;
+                fileList.appendChild(li);
+            }
+        })
+        .catch(error => console.error("Błąd listowania plików w Azure:", error));
+}
 
     </script>
 </body>
